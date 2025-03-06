@@ -1936,15 +1936,17 @@ func (d *Debugger) findLocation(goid int64, frame, deferredCall int, locStr stri
 	locations := []api.Location{}
 	t := proc.ValidTargets{Group: d.target}
 	subst := ""
+	var err error
 	for t.Next() {
 		pid := t.Pid()
 		s, _ := proc.ConvertEvalScope(t.Target, goid, frame, deferredCall)
-		locs, s1, err := locSpec.Find(t.Target, d.processArgs, s, locStr, includeNonExecutableLines, substitutePathRules)
+		locs, s1, findErr := locSpec.Find(t.Target, d.processArgs, s, locStr, includeNonExecutableLines, substitutePathRules)
+		err = findErr
 		if s1 != "" {
 			subst = s1
 		}
 		if err != nil {
-			return nil, "", err
+			continue
 		}
 		for i := range locs {
 			if locs[i].PC == 0 {
@@ -1960,6 +1962,9 @@ func (d *Debugger) findLocation(goid int64, frame, deferredCall int, locStr stri
 			}
 		}
 		locations = append(locations, locs...)
+	}
+	if err != nil {
+		return nil, "", err
 	}
 	return locations, subst, nil
 }
