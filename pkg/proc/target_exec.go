@@ -256,6 +256,10 @@ func (grp *TargetGroup) Continue() error {
 			}
 			if curbp.LogicalID() != hardcodedBreakpointID {
 				dbp.StopReason = StopBreakpoint
+				curlbp := curbp.Breakpoint.Logical
+				if curlbp.UnsuspendCallback != nil {
+					curlbp.UnsuspendCallback()
+				}
 			}
 			if curbp.Breakpoint.WatchType != 0 {
 				dbp.StopReason = StopWatchpoint

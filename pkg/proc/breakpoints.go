@@ -1104,7 +1104,8 @@ type LogicalBreakpoint struct {
 	// condUsesHitCounts is true when 'cond' uses breakpoint hitcounts
 	condUsesHitCounts bool
 
-	UserData interface{} // Any additional information about the breakpoint
+	UserData          interface{} // Any additional information about the breakpoint
+	UnsuspendCallback func()
 	// Name of root function from where tracing needs to be done
 	RootFuncName string
 	// depth of tracing

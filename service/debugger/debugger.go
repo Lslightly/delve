@@ -672,7 +672,7 @@ func (d *Debugger) state(retLoadCfg *proc.LoadConfig, withBreakpointInfo bool) (
 // If suspended is true a logical breakpoint will be created even if the
 // location can not be found, the backend will attempt to enable the
 // breakpoint every time a new plugin is loaded.
-func (d *Debugger) CreateBreakpoint(requestedBp *api.Breakpoint, locExpr string, substitutePathRules [][2]string, suspended bool) (*api.Breakpoint, error) {
+func (d *Debugger) CreateBreakpoint(requestedBp *api.Breakpoint, locExpr string, substitutePathRules [][2]string, suspended bool, unsuspendCallback func(*api.Breakpoint)) (*api.Breakpoint, error) {
 	d.targetMutex.Lock()
 	defer d.targetMutex.Unlock()
 
@@ -799,17 +799,9 @@ func (d *Debugger) CreateBreakpoint(requestedBp *api.Breakpoint, locExpr string,
 	}
 
 	createdBp := d.convertBreakpoint(lbp)
-	if err != nil { // suspended
-		createdBp.File = setbp.File
-		createdBp.Line = setbp.Line
-		createdBp.FunctionName = setbp.FunctionName
-		createdBp.Addrs = make([]uint64, len(setbp.PidAddrs))
-		for i, pidAddr := range setbp.PidAddrs {
-			createdBp.Addrs[i] = pidAddr.Addr
-		}
-		createdBp.AddrPid = make([]int, len(setbp.PidAddrs))
-		for i, pidAddr := range setbp.PidAddrs {
-			createdBp.AddrPid[i] = pidAddr.Pid
+	if err != nil && suspended {
+		lbp.UnsuspendCallback = func() {
+			unsuspendCallback(createdBp)
 		}
 	}
 	d.log.Infof("created breakpoint: %#v", createdBp)

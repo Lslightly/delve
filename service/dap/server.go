@@ -1522,7 +1522,11 @@ func (s *Session) setBreakpoints(prefix string, totalBps int, metadataFunc func(
 				err = setLogMessage(bp, want.logMessage)
 				if err == nil {
 					// Create new breakpoints.
-					got, err = s.debugger.CreateBreakpoint(bp, "", nil, true)
+					got, err = s.debugger.CreateBreakpoint(bp, "", nil, true, s.didUnsuspendBreakpoint)
+					if err.Error() == "could not enable new breakpoint, but it will be suspended" {
+						got.Line = wantLoc.line // The breakpoint was created, but it is suspended.
+						got.File = wantLoc.file
+					}
 				}
 			}
 		}
@@ -1545,7 +1549,7 @@ func setLogMessage(bp *api.Breakpoint, msg string) error {
 }
 
 func (s *Session) updateBreakpointsResponse(breakpoints []dap.Breakpoint, i int, err error, got *api.Breakpoint, suspended bool) {
-	breakpoints[i].Verified = err == nil || suspended
+	breakpoints[i].Verified = err == nil
 	if err != nil && !suspended {
 		breakpoints[i].Message = err.Error()
 		breakpoints[i].Reason = "failed"
@@ -1558,6 +1562,22 @@ func (s *Session) updateBreakpointsResponse(breakpoints []dap.Breakpoint, i int,
 	if err != nil && suspended {
 		breakpoints[i].Reason = "pending"
 	}
+}
+
+func (s *Session) didUnsuspendBreakpoint(bp *api.Breakpoint) {
+	path := s.toClientPath(bp.File)
+	s.send(&dap.BreakpointEvent{
+		Event: *newEvent("breakpoint"),
+		Body: dap.BreakpointEventBody{
+			Reason: "changed",
+			Breakpoint: dap.Breakpoint{
+				Verified: true,
+				Id:       bp.ID,
+				Line:     bp.Line,
+				Source:   &dap.Source{Name: filepath.Base(path), Path: path},
+			},
+		},
+	})
 }
 
 // functionBpPrefix is the prefix of bp.Name for every breakpoint bp set
