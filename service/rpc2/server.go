@@ -261,7 +261,7 @@ func (s *RPCServer) CreateBreakpoint(arg CreateBreakpointIn, out *CreateBreakpoi
 		return err
 	}
 	createdbp, err := s.debugger.CreateBreakpoint(&arg.Breakpoint, arg.LocExpr, arg.SubstitutePathRules, arg.Suspended)
-	if err != nil {
+	if err != nil && err.Error() != "could not enable new breakpoint, but it will be suspended" {
 		return err
 	}
 	out.Breakpoint = *createdbp

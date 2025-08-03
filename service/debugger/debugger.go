@@ -791,6 +791,7 @@ func (d *Debugger) CreateBreakpoint(requestedBp *api.Breakpoint, locExpr string,
 	if err != nil {
 		if suspended {
 			logflags.DebuggerLogger().Debugf("could not enable new breakpoint: %v (breakpoint will be suspended)", err)
+			err = errors.New("could not enable new breakpoint, but it will be suspended")
 		} else {
 			delete(d.target.LogicalBreakpoints, lbp.LogicalID)
 			return nil, err
@@ -798,8 +799,21 @@ func (d *Debugger) CreateBreakpoint(requestedBp *api.Breakpoint, locExpr string,
 	}
 
 	createdBp := d.convertBreakpoint(lbp)
+	if err != nil { // suspended
+		createdBp.File = setbp.File
+		createdBp.Line = setbp.Line
+		createdBp.FunctionName = setbp.FunctionName
+		createdBp.Addrs = make([]uint64, len(setbp.PidAddrs))
+		for i, pidAddr := range setbp.PidAddrs {
+			createdBp.Addrs[i] = pidAddr.Addr
+		}
+		createdBp.AddrPid = make([]int, len(setbp.PidAddrs))
+		for i, pidAddr := range setbp.PidAddrs {
+			createdBp.AddrPid[i] = pidAddr.Pid
+		}
+	}
 	d.log.Infof("created breakpoint: %#v", createdBp)
-	return createdBp, nil
+	return createdBp, err
 }
 
 func (d *Debugger) convertBreakpoint(lbp *proc.LogicalBreakpoint) *api.Breakpoint {

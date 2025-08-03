@@ -1490,7 +1490,7 @@ func (s *Session) setBreakpoints(prefix string, totalBps int, metadataFunc func(
 			}
 		}
 		createdBps[want.name] = struct{}{}
-		s.updateBreakpointsResponse(breakpoints, i, err, got)
+		s.updateBreakpointsResponse(breakpoints, i, err, got, false)
 	}
 
 	// Clear breakpoints.
@@ -1522,12 +1522,12 @@ func (s *Session) setBreakpoints(prefix string, totalBps int, metadataFunc func(
 				err = setLogMessage(bp, want.logMessage)
 				if err == nil {
 					// Create new breakpoints.
-					got, err = s.debugger.CreateBreakpoint(bp, "", nil, false)
+					got, err = s.debugger.CreateBreakpoint(bp, "", nil, true)
 				}
 			}
 		}
 		createdBps[want.name] = struct{}{}
-		s.updateBreakpointsResponse(breakpoints, i, err, got)
+		s.updateBreakpointsResponse(breakpoints, i, err, got, true)
 	}
 	return breakpoints
 }
@@ -1544,15 +1544,19 @@ func setLogMessage(bp *api.Breakpoint, msg string) error {
 	return nil
 }
 
-func (s *Session) updateBreakpointsResponse(breakpoints []dap.Breakpoint, i int, err error, got *api.Breakpoint) {
-	breakpoints[i].Verified = err == nil
-	if err != nil {
+func (s *Session) updateBreakpointsResponse(breakpoints []dap.Breakpoint, i int, err error, got *api.Breakpoint, suspended bool) {
+	breakpoints[i].Verified = err == nil || suspended
+	if err != nil && !suspended {
 		breakpoints[i].Message = err.Error()
+		breakpoints[i].Reason = "failed"
 	} else {
 		path := s.toClientPath(got.File)
 		breakpoints[i].Id = got.ID
 		breakpoints[i].Line = got.Line
 		breakpoints[i].Source = &dap.Source{Name: filepath.Base(path), Path: path}
+	}
+	if err != nil && suspended {
+		breakpoints[i].Reason = "pending"
 	}
 }
 

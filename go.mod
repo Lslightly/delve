@@ -32,3 +32,5 @@ require (
 	golang.org/x/mod v0.20.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 )
+
+replace github.com/google/go-dap v0.12.0 => github.com/Lslightly/go-dap v0.13.0
