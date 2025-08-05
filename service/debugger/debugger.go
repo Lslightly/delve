@@ -804,7 +804,9 @@ func (d *Debugger) CreateBreakpoint(requestedBp *api.Breakpoint, locExpr string,
 
 	if err != nil && suspended {
 		lbp.UnsuspendCallback = func() {
-			unsuspendCallback(createdBp)
+			if unsuspendCallback != nil {
+				unsuspendCallback(createdBp)
+			}
 		}
 	}
 
