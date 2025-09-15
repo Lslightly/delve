@@ -4119,7 +4119,7 @@ func (s *Session) convertDebuggerEvent(event *proc.Event) {
 			Body: dap.BreakpointEventBody{
 				Reason: "changed",
 				Breakpoint: dap.Breakpoint{
-					Verified: true,
+					Verified: event.Verified,
 					Id:       bp.ID,
 					Line:     bp.Line,
 					Source:   &dap.Source{Name: filepath.Base(path), Path: path},

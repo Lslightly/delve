@@ -194,8 +194,37 @@ func (grp *TargetGroup) Continue() error {
 				return err
 			}
 		}
+		olddbp := grp.Selected
 		grp.pickCurrentTarget(traptgt)
 		dbp := grp.Selected
+		if dbp != olddbp {
+			fn := olddbp.BinInfo().eventsFn
+			if fn != nil {
+				defer func() {
+					if err != nil {
+						return
+					}
+					for _, lbp := range olddbp.Breakpoints().Logical {
+						fn(&Event{
+							Kind: EventBreakpointMaterialized,
+							BreakpointMaterializedEventDetails: &BreakpointMaterializedEventDetails{
+								Breakpoint: lbp,
+								Verified:   false,
+							},
+						})
+					}
+					for _, lbp := range dbp.Breakpoints().Logical {
+						fn(&Event{
+							Kind: EventBreakpointMaterialized,
+							BreakpointMaterializedEventDetails: &BreakpointMaterializedEventDetails{
+								Breakpoint: lbp,
+								Verified:   true,
+							},
+						})
+					}
+				}()
+			}
+		}
 
 		if callErr != nil {
 			return callErr

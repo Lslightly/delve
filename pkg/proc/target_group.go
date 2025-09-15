@@ -595,4 +595,5 @@ type BinaryInfoDownloadEventDetails struct {
 // BreakpointMaterializedEventDetails describes the details of a BreakpointMaterializedEvent
 type BreakpointMaterializedEventDetails struct {
 	Breakpoint *LogicalBreakpoint
+	Verified   bool
 }

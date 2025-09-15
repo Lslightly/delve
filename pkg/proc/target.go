@@ -597,6 +597,7 @@ func (t *Target) pluginOpenCallback(Thread, *Target) (bool, error) {
 				Kind: EventBreakpointMaterialized,
 				BreakpointMaterializedEventDetails: &BreakpointMaterializedEventDetails{
 					Breakpoint: lbp,
+					Verified:   true,
 				},
 			})
 		}

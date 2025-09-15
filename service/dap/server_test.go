@@ -724,6 +724,14 @@ func TestLaunchWithFollowExec(t *testing.T) {
 		if contResp.Seq != 0 || contResp.RequestSeq != 7 || !contResp.Body.AllThreadsContinued {
 			t.Errorf("\ngot %#v\nwant Seq=0, RequestSeq=7 Body.AllThreadsContinued=true", contResp)
 		}
+		childBp1Event := client.ExpectBreakpointEvent(t)
+		if childBp1Event.Seq != 0 ||
+			childBp1Event.Body.Reason != "changed" ||
+			childBp1Event.Body.Breakpoint.Verified != true ||
+			childBp1Event.Body.Breakpoint.Id != 0 ||
+			childBp1Event.Body.Breakpoint.Line != 6 {
+			t.Errorf("\ngot %#v\nwant Seq=0, Body={Reason=\"changed\", Breakpoint{Verified=true, Id=0, Line=6, Source=}}", childBp1Event)
+		}
 		stopEvent = client.ExpectStoppedEvent(t)
 		if stopEvent.Seq != 0 ||
 			stopEvent.Body.Reason != "breakpoint" ||

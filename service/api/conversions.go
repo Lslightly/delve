@@ -476,6 +476,7 @@ func ConvertEvent(event *proc.Event) *Event {
 	if event.BreakpointMaterializedEventDetails != nil {
 		r.BreakpointMaterializedEventDetails = &BreakpointMaterializedEventDetails{
 			Breakpoint: ConvertLogicalBreakpoint(event.BreakpointMaterializedEventDetails.Breakpoint),
+			Verified:   event.Verified,
 		}
 	}
 
