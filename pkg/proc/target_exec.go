@@ -51,6 +51,10 @@ func (grp *TargetGroup) Next() (err error) {
 	return grp.Continue()
 }
 
+// notifyBreakpointChanges notifies the unverfied breakpoints and verified
+// breakpoints through the given function fn.
+// breakpoints in olddbp will all be unverified, while breakpoints in newdbp
+// which are not suspended will become verified.
 func notifyBreakpointChanges(olddbp, newdbp *Target, fn func(*Event)) {
 	unverifiedCnt, verifiedCnt := 0, 0
 	for _, lbp := range olddbp.Breakpoints().Logical {
@@ -225,12 +229,14 @@ func (grp *TargetGroup) Continue() error {
 		dbp := grp.Selected
 
 		if dbp != olddbp {
+			// switch to new target
 			fn := olddbp.BinInfo().eventsFn
 			if fn != nil {
 				defer func() {
 					if err != nil {
 						return
 					}
+					// only execute notifying when there is no error
 					notifyBreakpointChanges(olddbp, dbp, fn)
 				}()
 			}
