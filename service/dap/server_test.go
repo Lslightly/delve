@@ -724,13 +724,29 @@ func TestLaunchWithFollowExec(t *testing.T) {
 		if contResp.Seq != 0 || contResp.RequestSeq != 7 || !contResp.Body.AllThreadsContinued {
 			t.Errorf("\ngot %#v\nwant Seq=0, RequestSeq=7 Body.AllThreadsContinued=true", contResp)
 		}
-		childBp1Event := client.ExpectBreakpointEvent(t)
-		if childBp1Event.Seq != 0 ||
-			childBp1Event.Body.Reason != "changed" ||
-			childBp1Event.Body.Breakpoint.Verified != true ||
-			childBp1Event.Body.Breakpoint.Id != 0 ||
-			childBp1Event.Body.Breakpoint.Line != 6 {
-			t.Errorf("\ngot %#v\nwant Seq=0, Body={Reason=\"changed\", Breakpoint{Verified=true, Id=0, Line=6, Source=}}", childBp1Event)
+		/*
+			Unverified breakpoints, whose names include:
+				Name: unrecovered-panic, FunctionName: runtime.fatalpanic
+				Name: runtime-fatal-throw, FunctionName: runtime.fatalsignal
+				Name: sourceBp <path/to/spawnchild.go:6>, FunctionName: main.traceme5
+		*/
+		for i := 0; i < 3; i++ {
+			bpEvent := client.ExpectBreakpointEvent(t)
+			if bpEvent.Body.Breakpoint.Verified != false {
+				t.Errorf("\ngot Body.Breakpoint.Verified=true, want false")
+			}
+		}
+		/*
+			Verified breakpoints, whose names include:
+				Name: unrecovered-panic, FunctionName: runtime.fatalpanic
+				Name: runtime-fatal-throw, FunctionName: runtime.fatalsignal
+				Name: sourceBp <path/to/spawnchild.go:6>, FunctionName: main.traceme5
+		*/
+		for i := 0; i < 3; i++ {
+			bpEvent := client.ExpectBreakpointEvent(t)
+			if bpEvent.Body.Breakpoint.Verified != true {
+				t.Errorf("\ngot Body.Breakpoint.Verified=false, want true")
+			}
 		}
 		stopEvent = client.ExpectStoppedEvent(t)
 		if stopEvent.Seq != 0 ||
@@ -758,6 +774,33 @@ func TestLaunchWithFollowExec(t *testing.T) {
 		if contResp.Seq != 0 || contResp.RequestSeq != 9 || !contResp.Body.AllThreadsContinued {
 			t.Errorf("\ngot %#v\nwant Seq=0, RequestSeq=9 Body.AllThreadsContinued=true", contResp)
 		}
+
+		/*
+			Unverified breakpoints, whose names include:
+				Name: unrecovered-panic, FunctionName: runtime.fatalpanic
+				Name: runtime-fatal-throw, FunctionName: runtime.fatalsignal
+				Name: sourceBp <path/to/spawnchild.go:6>, FunctionName: main.traceme5
+				Name: sourceBp <path/to/spawn.go:54>, FunctionName: main.main
+		*/
+		for i := 0; i < 4; i++ {
+			bpEvent := client.ExpectBreakpointEvent(t)
+			if bpEvent.Body.Breakpoint.Verified != false {
+				t.Errorf("\ngot Body.Breakpoint.Verified=true, want false")
+			}
+		}
+		/*
+			Verified breakpoints, whose names include:
+				Name: unrecovered-panic, FunctionName: runtime.fatalpanic
+				Name: runtime-fatal-throw, FunctionName: runtime.fatalsignal
+				Name: sourceBp <path/to/spawn.go:54>, FunctionName: main.main
+		*/
+		for i := 0; i < 3; i++ {
+			bpEvent := client.ExpectBreakpointEvent(t)
+			if bpEvent.Body.Breakpoint.Verified != true {
+				t.Errorf("\ngot Body.Breakpoint.Verified=false, want true")
+			}
+		}
+
 		stopEvent = client.ExpectStoppedEvent(t)
 		if stopEvent.Seq != 0 ||
 			stopEvent.Body.Reason != "breakpoint" ||

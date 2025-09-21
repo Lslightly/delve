@@ -51,6 +51,32 @@ func (grp *TargetGroup) Next() (err error) {
 	return grp.Continue()
 }
 
+func notifyBreakpointChanges(olddbp, newdbp *Target, fn func(*Event)) {
+	unverifiedCnt, verifiedCnt := 0, 0
+	for _, lbp := range olddbp.Breakpoints().Logical {
+		unverifiedCnt++
+		fn(&Event{
+			Kind: EventBreakpointMaterialized,
+			BreakpointMaterializedEventDetails: &BreakpointMaterializedEventDetails{
+				Breakpoint: lbp,
+				Verified:   false,
+			},
+		})
+	}
+	for _, lbp := range newdbp.Breakpoints().Logical {
+		if !isSuspended(newdbp, lbp) {
+			verifiedCnt++
+			fn(&Event{
+				Kind: EventBreakpointMaterialized,
+				BreakpointMaterializedEventDetails: &BreakpointMaterializedEventDetails{
+					Breakpoint: lbp,
+					Verified:   true,
+				},
+			})
+		}
+	}
+}
+
 // Continue continues execution of the debugged
 // processes. It will continue until it hits a breakpoint
 // or is otherwise stopped.
@@ -197,6 +223,7 @@ func (grp *TargetGroup) Continue() error {
 		olddbp := grp.Selected
 		grp.pickCurrentTarget(traptgt)
 		dbp := grp.Selected
+
 		if dbp != olddbp {
 			fn := olddbp.BinInfo().eventsFn
 			if fn != nil {
@@ -204,24 +231,7 @@ func (grp *TargetGroup) Continue() error {
 					if err != nil {
 						return
 					}
-					for _, lbp := range olddbp.Breakpoints().Logical {
-						fn(&Event{
-							Kind: EventBreakpointMaterialized,
-							BreakpointMaterializedEventDetails: &BreakpointMaterializedEventDetails{
-								Breakpoint: lbp,
-								Verified:   false,
-							},
-						})
-					}
-					for _, lbp := range dbp.Breakpoints().Logical {
-						fn(&Event{
-							Kind: EventBreakpointMaterialized,
-							BreakpointMaterializedEventDetails: &BreakpointMaterializedEventDetails{
-								Breakpoint: lbp,
-								Verified:   true,
-							},
-						})
-					}
+					notifyBreakpointChanges(olddbp, dbp, fn)
 				}()
 			}
 		}
