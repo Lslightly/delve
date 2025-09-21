@@ -79,6 +79,7 @@ func notifyBreakpointChanges(olddbp, newdbp *Target, fn func(*Event)) {
 			})
 		}
 	}
+	logflags.DebuggerLogger().Debugf("notified %d unverified and %d verified breakpoints", unverifiedCnt, verifiedCnt)
 }
 
 // Continue continues execution of the debugged
